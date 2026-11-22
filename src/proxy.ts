@@ -36,7 +36,8 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Only /admin requires strict authentication; students can freely search, match, onboard and view dashboard without logging in
-  const isProtectedRoute = request.nextUrl.pathname.startsWith("/admin")
+  const pathname = request.nextUrl.pathname
+  const isProtectedRoute = pathname === "/admin" || pathname.startsWith("/admin/")
 
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
