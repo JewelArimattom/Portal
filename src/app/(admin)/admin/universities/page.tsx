@@ -6,13 +6,13 @@ export default async function AdminUniversitiesPage() {
   const { supabase, role } = await requireAdminAccess();
   const [{ data, error }, { data: programmes, error: programmeError }] = await Promise.all([
     supabase.from('universities').select('id,name,country,city,institution_type,official_website,admissions_website,description,is_public,status,is_demo,federal_state,course_catalog_status').order('name').range(0, 4999),
-    supabase.from('programmes').select('id,university_id,name,degree_level,status').order('name').range(0, 9999),
+    supabase.from('programmes').select('id,university_id,name,degree_level,subject_area,specialization,description,teaching_language,duration_semesters,tuition_fee_per_semester,semester_contribution,application_fee,official_programme_url,official_application_url,application_method,status').order('name').range(0, 9999),
   ]);
   const courseMap = new Map<string, NonNullable<typeof programmes>>();
   for (const programme of programmes ?? []) courseMap.set(programme.university_id, [...(courseMap.get(programme.university_id) ?? []), programme]);
   const institutions: AdminUniversityRow[] = (data ?? []).map((university) => {
     const courses = courseMap.get(university.id) ?? [];
-    return { ...university, programme_count: courses.length, programmes: courses.map(({ id, name, degree_level, status }) => ({ id, name, degree_level, status })) };
+    return { ...university, programme_count: courses.length, programmes: courses };
   });
 
   return <div className="space-y-6">
