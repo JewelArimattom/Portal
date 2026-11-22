@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Download, FileUp, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -138,9 +138,17 @@ const blankProgramme = (universityId: string): Omit<AdminProgrammeRow, 'id' | 'u
   status: 'draft', requirements_data_status: 'unknown', admission_selectivity: 'unknown',
 });
 
-export function AdminProgrammesManager({ programmes, institutions, role }: { programmes: AdminProgrammeRow[]; institutions: InstitutionOption[]; role: string }) {
+export function AdminProgrammesManager({ programmes, totalCount: initialTotalCount, institutions, role }: { programmes: AdminProgrammeRow[]; totalCount: number; institutions: InstitutionOption[]; role: string }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [institutionFilter, setInstitutionFilter] = useState('');
+  const [programmeRows, setProgrammeRows] = useState(programmes);
+  const [totalCount, setTotalCount] = useState(initialTotalCount);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+  const initialSearch = useRef(true);
+  const latestFilters = useRef({ query, institutionFilter });
+  latestFilters.current = { query, institutionFilter };
   const [editing, setEditing] = useState<AdminProgrammeRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -149,11 +157,44 @@ export function AdminProgrammesManager({ programmes, institutions, role }: { pro
   const [csvFileName, setCsvFileName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const filtered = useMemo(() => { const term = query.toLowerCase().trim(); return programmes.filter((program) => !term || [program.name, program.university_name, program.subject_area ?? '', program.university_country].some((v) => v.toLowerCase().includes(term))); }, [programmes, query]);
+  useEffect(() => { setProgrammeRows(programmes); setTotalCount(initialTotalCount); }, [programmes, initialTotalCount]);
+  useEffect(() => {
+    if (initialSearch.current) { initialSearch.current = false; return; }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setListLoading(true); setListError(null);
+      const params = new URLSearchParams({ q: query });
+      if (institutionFilter) params.set('institution_id', institutionFilter);
+      try {
+        const response = await fetch(`/api/admin/programmes?${params}`, { signal: controller.signal });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? 'Could not search programmes.');
+        setProgrammeRows(result.programmes as AdminProgrammeRow[]); setTotalCount(result.total as number);
+      } catch (cause) {
+        if (!controller.signal.aborted) setListError(cause instanceof Error ? cause.message : 'Could not search programmes.');
+      } finally { if (!controller.signal.aborted) setListLoading(false); }
+    }, 250);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [query, institutionFilter]);
+
+  const loadMoreProgrammes = async () => {
+    setListLoading(true); setListError(null);
+    const params = new URLSearchParams({ q: query, offset: String(programmeRows.length) });
+    if (institutionFilter) params.set('institution_id', institutionFilter);
+    try {
+      const response = await fetch(`/api/admin/programmes?${params}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Could not load more programmes.');
+      if (query !== latestFilters.current.query || institutionFilter !== latestFilters.current.institutionFilter) return;
+      setProgrammeRows((current) => [...current, ...(result.programmes as AdminProgrammeRow[])]); setTotalCount(result.total as number);
+    } catch (cause) { setListError(cause instanceof Error ? cause.message : 'Could not load more programmes.'); }
+    finally { setListLoading(false); }
+  };
   const canDelete = role === 'admin';
   const formValues = editing ?? blankProgramme(institutions[0]?.id ?? '');
   const showForm = creating || Boolean(editing);
   const closeForm = () => { setCreating(false); setEditing(null); setError(null); };
+  const resetProgrammeFilters = () => { setQuery(''); setInstitutionFilter(''); };
 
   const submitProgramme = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setSaving(true); setError(null); setNotice(null);
@@ -172,7 +213,7 @@ export function AdminProgrammesManager({ programmes, institutions, role }: { pro
     });
     setSaving(false);
     if (result.error) setError(result.error);
-    else { setNotice(editing ? 'Programme updated.' : 'Programme added as a draft.'); closeForm(); router.refresh(); }
+    else { setNotice(editing ? 'Programme updated.' : 'Programme added as a draft.'); closeForm(); resetProgrammeFilters(); router.refresh(); }
   };
 
   const upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +240,7 @@ export function AdminProgrammesManager({ programmes, institutions, role }: { pro
       if (result.error) setError(result.error);
       else {
         setNotice(`Imported ${result.counts?.universities ?? csvPreview.length} institutions and ${result.counts?.programmes ?? programmeCount} programmes. Programmes were saved as drafts.`);
-        setCsvPreview(null); setCsvFileName(''); router.refresh();
+        setCsvPreview(null); setCsvFileName(''); resetProgrammeFilters(); router.refresh();
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'The import could not be completed.'); }
     finally { setCsvBusy(false); }
@@ -208,7 +249,7 @@ export function AdminProgrammesManager({ programmes, institutions, role }: { pro
   const remove = async (programme: AdminProgrammeRow) => {
     if (!window.confirm(`Delete “${programme.name}” and its requirements and intake records? This cannot be undone.`)) return;
     setError(null); const result = await deleteProgramme(programme.id);
-    if (result.error) setError(result.error); else router.refresh();
+    if (result.error) setError(result.error); else { resetProgrammeFilters(); router.refresh(); }
   };
 
   return <div className="space-y-5">
@@ -231,7 +272,7 @@ export function AdminProgrammesManager({ programmes, institutions, role }: { pro
     {notice && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
 
     <section id="new" className="scroll-mt-24 space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row"><label className="relative min-w-0 flex-1"><span className="sr-only">Search programmes</span><Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search programmes or institutions" className="pl-9" /></label><Button type="button" onClick={() => { if (!institutions.length) { setError('Add an institution before adding its programmes.'); return; } closeForm(); setCreating(true); }} className="bg-[#173b5b] text-white hover:bg-[#102c45]"><Plus aria-hidden="true" className="mr-2 h-4 w-4" />Add programme</Button></div>
+      <div className="flex flex-col gap-3 sm:flex-row"><label className="relative min-w-0 flex-1"><span className="sr-only">Search programmes</span><Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search programme name or subject" className="pl-9" /></label><label className="sr-only" htmlFor="programme-institution-filter">Filter by institution</label><select id="programme-institution-filter" value={institutionFilter} onChange={(event) => setInstitutionFilter(event.target.value)} className="h-10 min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm sm:w-64"><option value="">All institutions</option>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><Button type="button" onClick={() => { if (!institutions.length) { setError('Add an institution before adding its programmes.'); return; } closeForm(); setCreating(true); }} className="bg-[#173b5b] text-white hover:bg-[#102c45]"><Plus aria-hidden="true" className="mr-2 h-4 w-4" />Add programme</Button></div>
       {showForm && <form key={editing?.id ?? (creating ? 'new' : 'hidden')} onSubmit={submitProgramme} className="rounded-2xl border border-[#cbd9e1] bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold text-slate-950">{editing ? 'Edit programme' : 'Add programme'}</h2><button type="button" aria-label="Close form" onClick={closeForm} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="h-4 w-4" /></button></div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -255,13 +296,15 @@ export function AdminProgrammesManager({ programmes, institutions, role }: { pro
       </form>}
     </section>
 
+    {listError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{listError}</p>}
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5"><h2 className="font-semibold text-slate-950">All programmes</h2><span className="text-sm text-slate-500">{filtered.length} of {programmes.length}</span></div>
-      {!filtered.length ? <p className="p-8 text-center text-sm text-slate-500">No programmes match this search.</p> : <ul className="divide-y divide-slate-100">{filtered.map((program) => <li key={program.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5"><h2 className="font-semibold text-slate-950">All programmes</h2><span className="text-sm text-slate-600" aria-live="polite">Showing {programmeRows.length} of {totalCount}{listLoading ? ' · Loading…' : ''}</span></div>
+      {!programmeRows.length ? <p className="p-8 text-center text-sm text-slate-600">{listLoading ? 'Searching programmes…' : 'No programmes match these filters.'}</p> : <ul className="divide-y divide-slate-100">{programmeRows.map((program) => <li key={program.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div className="flex min-w-0 gap-3"><span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800"><BookOpen aria-hidden="true" className="h-5 w-5" /></span><div className="min-w-0"><h3 className="font-semibold text-slate-950">{program.name}</h3><p className="mt-0.5 text-sm text-slate-600">{program.university_name} · {program.university_country}</p><p className="mt-1 text-xs capitalize text-slate-500">{program.degree_level} · {program.subject_area || 'Subject area not set'} · {program.status}{program.is_demo ? ' · demo record' : ''}</p></div></div>
         <div className="flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" onClick={() => { setCreating(false); setEditing(program); }}><Pencil aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Edit</Button>{canDelete && <Button type="button" size="sm" variant="outline" onClick={() => void remove(program)} className="border-rose-200 text-rose-700 hover:bg-rose-50"><Trash2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Delete</Button>}</div>
       </li>)}</ul>}
     </div>
+    {programmeRows.length < totalCount && <div className="flex justify-center"><Button type="button" variant="outline" disabled={listLoading} onClick={() => void loadMoreProgrammes()}>{listLoading ? 'Loading…' : `Load more programmes (${totalCount - programmeRows.length} remaining)`}</Button></div>}
   </div>;
 }
 

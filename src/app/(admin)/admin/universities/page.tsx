@@ -4,19 +4,17 @@ import { requireAdminAccess } from '@/lib/admin/auth';
 
 export default async function AdminUniversitiesPage() {
   const { supabase, role } = await requireAdminAccess();
-  const [{ data, error }, { data: programmes, error: programmeError }] = await Promise.all([
-    supabase.from('universities').select('id,name,country,city,institution_type,official_website,admissions_website,description,is_public,status,is_demo,federal_state,course_catalog_status').order('name').range(0, 4999),
-    supabase.from('programmes').select('id,university_id,name,degree_level,subject_area,specialization,description,teaching_language,duration_semesters,tuition_fee_per_semester,semester_contribution,application_fee,official_programme_url,official_application_url,application_method,status').order('name').range(0, 9999),
-  ]);
-  const courseMap = new Map<string, NonNullable<typeof programmes>>();
-  for (const programme of programmes ?? []) courseMap.set(programme.university_id, [...(courseMap.get(programme.university_id) ?? []), programme]);
+  const { data, count, error } = await supabase.from('universities')
+    .select('id,name,country,city,institution_type,official_website,admissions_website,description,is_public,status,is_demo,federal_state,course_catalog_status,programmes(count)', { count: 'exact' })
+    .order('name').range(0, 24);
   const institutions: AdminUniversityRow[] = (data ?? []).map((university) => {
-    const courses = courseMap.get(university.id) ?? [];
-    return { ...university, programme_count: courses.length, programmes: courses };
+    const programmeCount = Array.isArray(university.programmes) ? university.programmes[0]?.count ?? 0 : 0;
+    const { programmes: _count, ...details } = university;
+    return { ...details, programme_count: programmeCount, programmes: [] };
   });
 
   return <div className="space-y-6">
     <PageHeader title="Institutions" description="Every institution currently stored in the UniMatch database." breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Institutions' }]} />
-    {error || programmeError ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">Could not load catalogue data: {(error || programmeError)?.message}</p> : <AdminUniversitiesManager universities={institutions} canDelete={role === 'admin'} />}
+    {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">Could not load institutions: {error.message}</p> : <AdminUniversitiesManager universities={institutions} totalCount={count ?? 0} canDelete={role === 'admin'} />}
   </div>;
 }

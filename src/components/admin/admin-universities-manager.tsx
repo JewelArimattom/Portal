@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Building2, ChevronDown, ExternalLink, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,9 +39,19 @@ const blank: Omit<AdminUniversityRow, 'id' | 'status' | 'is_demo' | 'programme_c
   admissions_website: '', description: '', is_public: true,
 };
 
-export function AdminUniversitiesManager({ universities, canDelete }: { universities: AdminUniversityRow[]; canDelete: boolean }) {
+type ProgrammePage = { programmes: ProgrammeRow[]; total: number; loaded: boolean; loading: boolean; loadingMore: boolean; error: string | null };
+
+export function AdminUniversitiesManager({ universities, totalCount: initialTotalCount, canDelete }: { universities: AdminUniversityRow[]; totalCount: number; canDelete: boolean }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [institutionRows, setInstitutionRows] = useState(universities);
+  const [totalCount, setTotalCount] = useState(initialTotalCount);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+  const [programmePages, setProgrammePages] = useState<Record<string, ProgrammePage>>({});
+  const initialSearch = useRef(true);
+  const latestQuery = useRef(query);
+  latestQuery.current = query;
   const [editing, setEditing] = useState<AdminUniversityRow | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +61,69 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
   const [editingProgramme, setEditingProgramme] = useState<ProgrammeRow | null>(null);
   const [creatingProgrammeFor, setCreatingProgrammeFor] = useState<string | null>(null);
   const [programmeSaving, setProgrammeSaving] = useState(false);
-  const filtered = useMemo(() => {
-    const term = query.toLowerCase().trim();
-    return universities.filter((uni) => !term || [uni.name, uni.city, uni.country, uni.federal_state ?? ''].some((v) => v.toLowerCase().includes(term)));
-  }, [universities, query]);
+  useEffect(() => {
+    setInstitutionRows(universities);
+    setTotalCount(initialTotalCount);
+  }, [universities, initialTotalCount]);
+
+  useEffect(() => {
+    if (initialSearch.current) { initialSearch.current = false; return; }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setListLoading(true); setListError(null);
+      try {
+        const response = await fetch(`/api/admin/universities?q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? 'Could not search institutions.');
+        setInstitutionRows(result.universities as AdminUniversityRow[]);
+        setTotalCount(result.total as number);
+      } catch (cause) {
+        if (!controller.signal.aborted) setListError(cause instanceof Error ? cause.message : 'Could not search institutions.');
+      } finally {
+        if (!controller.signal.aborted) setListLoading(false);
+      }
+    }, 250);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [query]);
+
+  const loadMoreInstitutions = async () => {
+    setListLoading(true); setListError(null);
+    try {
+      const response = await fetch(`/api/admin/universities?offset=${institutionRows.length}&q=${encodeURIComponent(query)}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Could not load more institutions.');
+      if (query !== latestQuery.current) return;
+      setInstitutionRows((current) => [...current, ...(result.universities as AdminUniversityRow[])]);
+      setTotalCount(result.total as number);
+    } catch (cause) {
+      setListError(cause instanceof Error ? cause.message : 'Could not load more institutions.');
+    } finally { setListLoading(false); }
+  };
+
+  const loadProgrammes = async (institutionId: string, offset = 0) => {
+    setProgrammePages((current) => ({
+      ...current,
+      [institutionId]: { programmes: offset ? current[institutionId]?.programmes ?? [] : [], total: current[institutionId]?.total ?? 0, loaded: offset > 0 && (current[institutionId]?.loaded ?? false), loading: offset === 0, loadingMore: offset > 0, error: null },
+    }));
+    try {
+      const response = await fetch(`/api/admin/universities?institution_id=${institutionId}&offset=${offset}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Could not load programmes.');
+      setProgrammePages((current) => {
+        const previous = current[institutionId]?.programmes ?? [];
+        const loadedProgrammes = result.programmes as ProgrammeRow[];
+        return { ...current, [institutionId]: { programmes: offset ? [...previous, ...loadedProgrammes] : loadedProgrammes, total: result.total as number, loaded: true, loading: false, loadingMore: false, error: null } };
+      });
+    } catch (cause) {
+      setProgrammePages((current) => ({ ...current, [institutionId]: { ...(current[institutionId] ?? { programmes: [], total: 0, loaded: false, loading: false, loadingMore: false }), loading: false, loadingMore: false, error: cause instanceof Error ? cause.message : 'Could not load programmes.' } }));
+    }
+  };
+
+  const toggleProgrammes = (institutionId: string) => {
+    if (expandedInstitution === institutionId) { setExpandedInstitution(null); return; }
+    setExpandedInstitution(institutionId);
+    if (!programmePages[institutionId]?.loaded) void loadProgrammes(institutionId);
+  };
 
   const closeForm = () => { setEditing(null); setIsCreating(false); setError(null); };
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -71,7 +140,7 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
     });
     setSaving(false);
     if (result.error) setError(result.error);
-    else { setNotice(editing ? 'Institution updated.' : 'Institution added.'); closeForm(); router.refresh(); }
+    else { setNotice(editing ? 'Institution updated.' : 'Institution added.'); closeForm(); setQuery(''); router.refresh(); }
   };
 
   const remove = async (university: AdminUniversityRow) => {
@@ -79,7 +148,7 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
     setError(null); setNotice(null);
     const result = await deleteUniversity(university.id);
     if (result.error) setError(result.error);
-    else { setNotice('Institution and its programmes deleted.'); router.refresh(); }
+    else { setNotice('Institution and its programmes deleted.'); setQuery(''); router.refresh(); }
   };
 
   const closeProgrammeForm = () => { setEditingProgramme(null); setCreatingProgrammeFor(null); setError(null); };
@@ -87,10 +156,11 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
     event.preventDefault();
     setProgrammeSaving(true); setError(null); setNotice(null);
     const data = new FormData(event.currentTarget);
+    const universityId = String(data.get('university_id'));
     const number = (key: string) => { const value = String(data.get(key) ?? '').trim(); return value ? Number(value) : null; };
     const result = await saveProgramme({
       ...(editingProgramme ? { id: editingProgramme.id } : {}),
-      university_id: String(data.get('university_id')),
+      university_id: universityId,
       name: data.get('name'), degree_level: data.get('degree_level'),
       subject_area: String(data.get('subject_area') ?? '').trim() || null,
       specialization: String(data.get('specialization') ?? '').trim() || null,
@@ -103,14 +173,25 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
     });
     setProgrammeSaving(false);
     if (result.error) setError(result.error);
-    else { setNotice(editingProgramme ? 'Programme updated.' : 'Programme added.'); closeProgrammeForm(); router.refresh(); }
+    else {
+      setNotice(editingProgramme ? 'Programme updated.' : 'Programme added.'); closeProgrammeForm();
+      await loadProgrammes(universityId);
+      router.refresh();
+    }
   };
   const removeProgramme = async (programme: ProgrammeRow) => {
     if (!window.confirm(`Delete “${programme.name}”? This cannot be undone.`)) return;
     setError(null); setNotice(null);
     const result = await deleteProgramme(programme.id);
     if (result.error) setError(result.error);
-    else { setNotice('Programme deleted.'); router.refresh(); }
+    else {
+      setNotice('Programme deleted.');
+      setProgrammePages((current) => {
+        const page = current[programme.university_id];
+        return page ? { ...current, [programme.university_id]: { ...page, programmes: page.programmes.filter((item) => item.id !== programme.id), total: Math.max(0, page.total - 1) } } : current;
+      });
+      router.refresh();
+    }
   };
 
   const formValues = editing ?? blank;
@@ -125,6 +206,7 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
 
       {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
       {notice && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
+      {listError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{listError}</p>}
 
       {showForm && <form key={editing?.id ?? (isCreating ? 'new' : 'hidden')} onSubmit={submit} className="rounded-2xl border border-[#cbd9e1] bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold text-slate-950">{editing ? 'Edit institution' : 'Add institution'}</h2><button type="button" onClick={closeForm} aria-label="Close form" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="h-4 w-4" /></button></div>
@@ -141,14 +223,14 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
       </form>}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5"><h2 className="font-semibold text-slate-950">All institutions</h2><span className="text-sm text-slate-500">{filtered.length} of {universities.length}</span></div>
-        {!filtered.length ? <p className="p-8 text-center text-sm text-slate-500">No institutions match this search.</p> : <ul className="divide-y divide-slate-100">
-          {filtered.map((uni) => <li key={uni.id} className="p-4 sm:px-5 sm:py-5">
+        <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5"><h2 className="font-semibold text-slate-950">All institutions</h2><span className="text-sm text-slate-600" aria-live="polite">Showing {institutionRows.length} of {totalCount}{listLoading ? ' · Loading…' : ''}</span></div>
+        {!institutionRows.length ? <p className="p-8 text-center text-sm text-slate-600">{listLoading ? 'Searching institutions…' : 'No institutions match this search.'}</p> : <ul className="divide-y divide-slate-100">
+          {institutionRows.map((uni) => <li key={uni.id} className="p-4 sm:px-5 sm:py-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 gap-3"><span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f0f4] text-[#173b5b]"><Building2 aria-hidden="true" className="h-5 w-5" /></span><div className="min-w-0"><h3 className="break-words font-semibold text-slate-950">{uni.name}</h3><p className="mt-0.5 text-sm text-slate-600">{uni.city}, {uni.country}{uni.federal_state ? ` · ${uni.federal_state}` : ''}</p><p className="mt-1 text-xs text-slate-500">{uni.programme_count} programmes · {uni.institution_type} · {uni.status}{uni.is_demo ? ' · demo record' : ''}</p></div></div>
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 {uni.official_website && <a href={uni.official_website} target="_blank" rel="noreferrer" aria-label={`Open ${uni.name} website`} className="inline-flex h-9 items-center gap-1 rounded-lg border px-3 text-sm text-slate-700 hover:bg-slate-50">Website <ExternalLink className="h-3.5 w-3.5" /></a>}
-                <Button type="button" variant="outline" size="sm" aria-expanded={expandedInstitution === uni.id} aria-controls={`programmes-${uni.id}`} onClick={() => setExpandedInstitution(expandedInstitution === uni.id ? null : uni.id)}><ChevronDown aria-hidden="true" className={`mr-1.5 h-3.5 w-3.5 transition-transform ${expandedInstitution === uni.id ? 'rotate-180' : ''}`} />{expandedInstitution === uni.id ? 'Hide programmes' : `Programmes (${uni.programme_count})`}</Button>
+                <Button type="button" variant="outline" size="sm" aria-expanded={expandedInstitution === uni.id} aria-controls={`programmes-${uni.id}`} onClick={() => toggleProgrammes(uni.id)}><ChevronDown aria-hidden="true" className={`mr-1.5 h-3.5 w-3.5 transition-transform ${expandedInstitution === uni.id ? 'rotate-180' : ''}`} />{expandedInstitution === uni.id ? 'Hide programmes' : `Programmes (${uni.programme_count})`}</Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => { setIsCreating(false); setEditing(uni); }}><Pencil aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Edit</Button>
                 {canDelete && <Button type="button" variant="outline" size="sm" onClick={() => void remove(uni)} className="border-rose-200 text-rose-700 hover:bg-rose-50"><Trash2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Delete</Button>}
               </div>
@@ -176,11 +258,16 @@ export function AdminUniversitiesManager({ universities, canDelete }: { universi
                 </div>
                 <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={closeProgrammeForm}>Cancel</Button><Button disabled={programmeSaving} className="bg-[#173b5b] text-white hover:bg-[#102c45]">{programmeSaving ? 'Saving…' : 'Save programme'}</Button></div>
               </form>}
-              {uni.programmes.length ? <ul className="divide-y divide-slate-200">{uni.programmes.map((program) => <li key={program.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-start gap-3"><BookOpen aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-[#32674f]" /><div className="min-w-0"><p className="break-words font-medium text-slate-950">{program.name}</p><p className="mt-0.5 text-sm capitalize text-slate-700">{program.degree_level}{program.subject_area ? ` · ${program.subject_area}` : ''} · {program.teaching_language} · {program.status}</p></div></div><div className="flex shrink-0 gap-2 pl-7 sm:pl-4"><Button type="button" size="sm" variant="outline" onClick={() => { setCreatingProgrammeFor(null); setEditingProgramme(program); setError(null); }}><Pencil aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Edit</Button>{canDelete && <Button type="button" size="sm" variant="outline" onClick={() => void removeProgramme(program)} className="border-rose-200 text-rose-700 hover:bg-rose-50"><Trash2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Delete</Button>}</div></li>)}</ul> : <p className="py-3 text-sm text-slate-700">No programmes yet. Add the first programme for this institution.</p>}
+              {programmePages[uni.id]?.loading && <p className="py-6 text-sm text-slate-700" role="status">Loading programmes…</p>}
+              {programmePages[uni.id]?.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm text-rose-800"><p>{programmePages[uni.id].error}</p><Button type="button" variant="outline" size="sm" onClick={() => void loadProgrammes(uni.id)}>Try again</Button></div>}
+              {programmePages[uni.id]?.loaded && programmePages[uni.id].programmes.length > 0 && <ul className="divide-y divide-slate-200">{programmePages[uni.id].programmes.map((program) => <li key={program.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-start gap-3"><BookOpen aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-[#32674f]" /><div className="min-w-0"><p className="break-words font-medium text-slate-950">{program.name}</p><p className="mt-0.5 text-sm capitalize text-slate-700">{program.degree_level}{program.subject_area ? ` · ${program.subject_area}` : ''} · {program.teaching_language} · {program.status}</p></div></div><div className="flex shrink-0 gap-2 pl-7 sm:pl-4"><Button type="button" size="sm" variant="outline" onClick={() => { setCreatingProgrammeFor(null); setEditingProgramme(program); setError(null); }}><Pencil aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Edit</Button>{canDelete && <Button type="button" size="sm" variant="outline" onClick={() => void removeProgramme(program)} className="border-rose-200 text-rose-700 hover:bg-rose-50"><Trash2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />Delete</Button>}</div></li>)}</ul>}
+              {programmePages[uni.id]?.loaded && programmePages[uni.id].programmes.length === 0 && <p className="py-3 text-sm text-slate-700">No programmes yet. Add the first programme for this institution.</p>}
+              {programmePages[uni.id]?.loaded && programmePages[uni.id].programmes.length < programmePages[uni.id].total && <div className="border-t border-slate-200 pt-3"><Button type="button" variant="outline" size="sm" disabled={programmePages[uni.id].loadingMore} onClick={() => void loadProgrammes(uni.id, programmePages[uni.id].programmes.length)}>{programmePages[uni.id].loadingMore ? 'Loading…' : `Load more programmes (${programmePages[uni.id].total - programmePages[uni.id].programmes.length} remaining)`}</Button></div>}
             </div>}
           </li>)}
         </ul>}
       </div>
+      {institutionRows.length < totalCount && <div className="flex flex-col items-center gap-2"><Button type="button" variant="outline" disabled={listLoading} onClick={() => void loadMoreInstitutions()}>{listLoading ? 'Loading…' : `Load more institutions (${totalCount - institutionRows.length} remaining)`}</Button></div>}
     </div>
   );
 }
