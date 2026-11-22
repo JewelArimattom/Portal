@@ -17,6 +17,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const {
@@ -35,6 +36,7 @@ export default function SignupPage() {
       if (res?.error) {
         setServerError(res.error);
       } else {
+        setSubmittedEmail(data.email);
         setSuccess(true);
       }
     } catch (err: any) {
@@ -46,20 +48,17 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="text-center py-4 space-y-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 mx-auto">
-          <CheckCircle2 className="h-6 w-6" />
+      <div className="space-y-5 py-3 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-800">
+          <CheckCircle2 aria-hidden="true" className="h-7 w-7" />
         </div>
-        <h3 className="text-lg font-bold text-slate-900">Check your email</h3>
-        <p className="text-xs text-slate-600 leading-relaxed max-w-xs mx-auto">
-          We sent a verification link to your email. Click the link to activate your student profile and start finding eligible programmes.
+        <h1 className="text-2xl font-semibold tracking-tight text-[#142f4b]">Check your inbox</h1>
+        <p className="mx-auto max-w-sm text-sm leading-6 text-slate-600">
+          We sent a verification link to <span className="break-all font-medium text-slate-900">{submittedEmail}</span>. Open it to verify your email and activate your account.
         </p>
-        <div className="pt-4">
-          <Link href="/login">
-            <Button variant="outline" size="sm">
-              Return to Sign In
-            </Button>
-          </Link>
+        <p className="text-sm text-slate-600">Can’t find the message? Check your spam folder.</p>
+        <div className="pt-2">
+          <Link href="/login" className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-[#173b5b] transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#173b5b] focus-visible:ring-offset-2">Return to sign in</Link>
         </div>
       </div>
     );

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { loginSchema, signupSchema, forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth"
 import { redirect } from "next/navigation"
+import { getPublicSiteOrigin } from "@/lib/auth/site-url"
 
 export async function signIn(formData: { email: string; password: string }) {
   const result = loginSchema.safeParse(formData)
@@ -39,6 +40,7 @@ export async function signUp(formData: {
     email: result.data.email,
     password: result.data.password,
     options: {
+      emailRedirectTo: `${getPublicSiteOrigin()}/auth/callback?next=%2Fdashboard`,
       data: {
         full_name: result.data.fullName,
       },
@@ -71,7 +73,7 @@ export async function resetPassword(formData: { email: string }) {
 
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(result.data.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SUPABASE_URL ? "" : ""}${typeof window !== "undefined" ? window.location.origin : ""}/reset-password`,
+    redirectTo: `${getPublicSiteOrigin()}/auth/callback?next=%2Freset-password`,
   })
 
   if (error) {
