@@ -1,0 +1,75 @@
+.onboardingPage {
+  max-width: 62rem;
+  margin-inline: auto;
+  color: #192c3a;
+}
+
+.onboardingPage :global(form) {
+  gap: 1.125rem;
+}
+
+.onboardingPage :global(form label) {
+  color: #263e50 !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.onboardingPage :global(form p.text-xs),
+.onboardingPage :global(form .text-xs) {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.onboardingPage :global(input:not([type='checkbox']):not([type='radio']):not([type='file'])),
+.onboardingPage :global(select),
+.onboardingPage :global(textarea) {
+  min-height: 3rem;
+  border-color: #aebec9;
+  border-radius: 0.625rem;
+  padding-inline: 0.875rem;
+  color: #172c3c !important;
+  font-size: 1rem !important;
+  line-height: 1.4;
+}
+
+.onboardingPage :global(input:focus-visible),
+.onboardingPage :global(select:focus-visible),
+.onboardingPage :global(textarea:focus-visible) {
+  border-color: #1b5b80;
+  outline: 3px solid rgb(40 112 144 / 22%);
+  outline-offset: 1px;
+}
+
+.onboardingPage :global(form button[type='submit']),
+.onboardingPage :global(form button[type='button']) {
+  min-height: 2.875rem;
+  border-radius: 0.75rem;
+  padding-inline: 1.125rem;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.onboardingPage :global(form > div:first-child) {
+  border-color: #d4dee5;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgb(20 47 75 / 4%);
+}
+
+@media (max-width: 639px) {
+  .onboardingPage {
+    padding-bottom: 0.5rem;
+  }
+
+  .onboardingPage :global(form) {
+    gap: 0.875rem;
+  }
+
+  .onboardingPage :global(form > div.flex.justify-end button[type='submit']),
+  .onboardingPage :global(form > div.flex.justify-end button[type='button']) {
+    width: 100%;
+    min-height: 3rem;
+    white-space: normal;
+  }
+}

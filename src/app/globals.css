@@ -1,26 +1,234 @@
 @import "tailwindcss";
 
 :root {
+  /* Primary - Navy/Blue */
+  --primary: #173b5b;
+  --primary-foreground: #ffffff;
+  --primary-light: #2563eb;
+  --primary-dark: #0f1d30;
+
+  /* Background */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+
+  /* Card */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  /* Popover */
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Secondary */
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  /* Muted */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  /* Accent */
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+
+  /* Destructive */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  /* Border */
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #287090;
+
+  /* Radius */
+  --radius: 0.5rem;
+
+  /* Semantic Colors */
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+  --color-blue-600: #1d5476;
+  --color-blue-700: #173b5b;
+  --color-blue-800: #102c45;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body, Arial, Helvetica, sans-serif);
+}
+
+html {
+  scroll-padding-top: 5rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+body,
+#__next {
+  min-width: 320px;
+}
+
+main,
+main > *,
+form,
+fieldset {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  body {
+    font-size: 16px;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: rgb(20 47 75 / 12%);
+  }
+
+  main button {
+    min-height: 44px;
+  }
+
+  .onboarding-flow form > div.flex.justify-end {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onboarding-flow form > div.flex.justify-end button {
+    width: 100%;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .mobile-bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 4px);
+  }
+}
+
+.mobile-bottom-nav ~ footer {
+  padding-bottom: 6rem;
+}
+
+@media (min-width: 1024px) {
+  .mobile-bottom-nav ~ footer {
+    padding-bottom: 1.75rem;
+  }
+}
+
+/* Keep the product workspace on the same calm editorial foundation as the landing page. */
+main h1 {
+  font-family: var(--font-body, Arial, sans-serif);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+main p.text-xs,
+main label.text-xs,
+main form.text-xs {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+main .rounded-xl.border,
+main .rounded-2xl.border,
+main .rounded-lg.border {
+  border-color: #dce3e7;
+  border-radius: 0.9rem;
+  box-shadow: 0 8px 24px rgb(20 47 75 / 3%);
+}
+
+main button:focus-visible,
+main a:focus-visible,
+header button:focus-visible,
+header a:focus-visible {
+  outline: 3px solid #287090;
+  outline-offset: 3px;
+}
+
+/* Form Controls & Labels: Guaranteed High-Contrast & Absolute Visibility */
+input,
+select,
+textarea {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+select option {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+label {
+  color: #0f172a !important;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
 }

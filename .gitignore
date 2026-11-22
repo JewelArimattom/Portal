@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+/.taste-skill/
 
 # production
 /build
@@ -32,6 +33,19 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local coding-agent settings and downloaded skills
+/.agent/
+/.agents/
+/.claude/
+/.codex/
+/.devin/
+/.gemini/
+/.impeccable/
+
+# local source-image downloads (optimized copies used by the site live in public/images)
+/data/*.jpg
 
 # vercel
 .vercel

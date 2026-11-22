@@ -1,0 +1,85 @@
+{
+ "note": "Credits for image assets in this folder, including photographs and illustrations.",
+ "photos": [
+  {
+   "file": "photo-f180545307-960.jpg",
+   "files": [
+    "photo-f180545307-500.jpg",
+    "photo-f180545307-960.jpg"
+   ],
+   "id": "f180545307",
+   "alt": "Universität Wien Campus Hof (Ian Ehm) 2",
+   "by": "Ian Ehm ( https://www.ianehm.com/ )",
+   "licence": "CC BY 4.0",
+   "licenceUrl": "https://creativecommons.org/licenses/by/4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Universit%C3%A4t_Wien_Campus_Hof_(Ian_Ehm)_2.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f180545329-1280.jpg",
+   "files": [
+    "photo-f180545329-500.jpg",
+    "photo-f180545329-960.jpg",
+    "photo-f180545329-1280.jpg"
+   ],
+   "id": "f180545329",
+   "alt": "Universität Wien Hauptgebäude (Ian Ehm) 12",
+   "by": "Ian Ehm ( https://www.ianehm.com/ )",
+   "licence": "CC BY 4.0",
+   "licenceUrl": "https://creativecommons.org/licenses/by/4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Universit%C3%A4t_Wien_Hauptgeb%C3%A4ude_(Ian_Ehm)_12.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f483767-960.jpg",
+   "files": [
+    "photo-f483767-500.jpg",
+    "photo-f483767-960.jpg"
+   ],
+   "id": "f483767",
+   "alt": "Library gallery",
+   "by": "No machine-readable author provided. Dr. Marcus Gossler~commonswiki assumed (based on copyright claims).",
+   "licence": "CC BY-SA 3.0",
+   "licenceUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+   "page": "https://commons.wikimedia.org/wiki/File:Library_gallery.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f140924.jpg",
+   "files": [
+    "photo-f140924-500.jpg",
+    "photo-f140924-960.jpg",
+    "photo-f140924.jpg"
+   ],
+   "id": "f140924",
+   "alt": "Freie Universitaet Berlin - Gebaeudekomplex Rost- und Silberlaube",
+   "by": "torinberl",
+   "licence": "CC BY-SA 3.0",
+   "licenceUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+   "page": "https://commons.wikimedia.org/wiki/File:Freie_Universitaet_Berlin_-_Gebaeudekomplex_Rost-_und_Silberlaube.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "berlin-university-engraving.jpg",
+   "files": ["berlin-university-engraving.jpg"],
+   "id": "berlin-university-engraving",
+   "alt": "Steel engraving of Berlin University’s main building around 1850.",
+   "by": "F. Hirchenhein after C. Würbs",
+   "licence": "Public Domain Mark 1.0",
+   "licenceUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+   "page": "https://commons.wikimedia.org/wiki/File:Das_Universit%C3%A4tsgeb%C3%A4ude_in_Berlin,_Stahlstich_um_1850.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "rwth-aachen-main-building.jpg",
+   "id": "rwth-aachen-main-building",
+   "alt": "The main building of RWTH Aachen University.",
+   "by": "א (Aleph)",
+   "licence": "CC BY-SA 2.5",
+   "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.5/",
+   "page": "https://commons.wikimedia.org/wiki/File:RWTH_Aachen_Hauptgeb%C3%A4ude.jpg",
+   "source": "Wikimedia Commons",
+   "note": "Downloaded as a 1200px-wide thumbnail for the UniMatch landing page."
+  }
+ ]
+}

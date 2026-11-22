@@ -1,0 +1,12 @@
+import { PageHeader } from '@/components/layout/page-header';
+import { requireAdminAccess } from '@/lib/admin/auth';
+
+export default async function AdminAuditPage() {
+  const { supabase, role } = await requireAdminAccess();
+  if (role !== 'admin') return <div className="space-y-6"><PageHeader title="Audit history" description="Administrative changes recorded in the database." breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Audit history' }]} /><p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Audit history is available to administrator accounts.</p></div>;
+  const { data, error } = await supabase.from('audit_logs').select('id,user_id,action,entity_type,entity_id,previous_value,new_value,created_at').order('created_at', { ascending: false }).limit(200);
+  return <div className="space-y-6">
+    <PageHeader title="Audit history" description="Administrative changes recorded in the database." breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Audit history' }]} />
+    {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">Could not load audit history: {error.message}</p> : !data?.length ? <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center"><h2 className="font-semibold text-slate-950">No audit records yet</h2><p className="mt-2 text-sm text-slate-600">Changes will appear here when audit logging is enabled for an action.</p></div> : <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="p-4">Date</th><th className="p-4">Action</th><th className="p-4">Record</th><th className="p-4">Admin account</th><th className="p-4">Change</th></tr></thead><tbody className="divide-y divide-slate-100">{data.map((entry) => <tr key={entry.id}><td className="p-4 text-slate-600">{new Date(entry.created_at).toLocaleString()}</td><td className="p-4"><span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{entry.action}</span></td><td className="p-4 text-slate-800">{entry.entity_type}{entry.entity_id ? ` · ${entry.entity_id}` : ''}</td><td className="p-4 text-slate-600">{entry.user_id ?? 'System'}</td><td className="max-w-sm p-4 text-xs text-slate-600">{entry.new_value ? JSON.stringify(entry.new_value) : entry.previous_value ? JSON.stringify(entry.previous_value) : '—'}</td></tr>)}</tbody></table></div>}
+  </div>;
+}

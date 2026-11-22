@@ -1,0 +1,11 @@
+Semester,Subject Name,Subject Code,Credits,Credit System,Theory Credits,Practical Credits,Grade,Marks,Category
+1,Discrete Mathematics,MTH101,4,indian_credits,4,0,A,85,Discrete Mathematics
+1,Programming in C,CS101,4,indian_credits,3,1,A+,90,Programming
+2,Data Structures,CS201,4,indian_credits,3,1,A,82,Data Structures
+2,Calculus and Linear Algebra,MTH201,4,indian_credits,4,0,B+,74,Calculus
+3,Database Management Systems,CS301,4,indian_credits,3,1,A+,91,Database Management
+3,Operating Systems,CS302,4,indian_credits,3,1,A,80,Operating Systems
+4,Design and Analysis of Algorithms,CS401,4,indian_credits,3,1,A,88,Algorithms
+4,Probability and Statistics,MTH401,4,indian_credits,4,0,A,84,Statistics
+5,Computer Networks,CS501,4,indian_credits,4,0,B+,76,Computer Networks
+6,Software Engineering,CS601,4,indian_credits,4,0,A,85,Software Engineering

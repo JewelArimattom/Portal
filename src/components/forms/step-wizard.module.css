@@ -1,0 +1,222 @@
+.wizard {
+  margin-bottom: 1.5rem;
+}
+
+.panel {
+  padding: 1.25rem 1.5rem 1.125rem;
+  border: 1px solid #d4dee5;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(20 47 75 / 5%);
+}
+
+.topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stepCount {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #315c79;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+}
+
+.stepTitle {
+  margin: 0;
+  color: #132f46;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.progressLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: #475b6b;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.progressLabel strong {
+  color: #173b5b;
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.progressTrack {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eef2;
+}
+
+.backButton {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #31556e;
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.backButton:hover {
+  background: #eef3f6;
+  color: #102c45;
+}
+
+.backButton:focus-visible {
+  outline: 3px solid #287090;
+  outline-offset: 2px;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: #1c587b;
+  transition: width 220ms ease-out;
+}
+
+.stepNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  overflow: visible;
+  margin: 1rem -0.25rem -0.125rem;
+  padding: 0.25rem 0.25rem 0.375rem;
+}
+
+.stepButton {
+  display: inline-flex;
+  min-width: 6.25rem;
+  min-height: 2.875rem;
+  flex: 1 1 calc(20% - 0.5rem);
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d8e1e7;
+  border-radius: 0.75rem;
+  background: #f5f8fa;
+  color: #354a5a;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.mobileStepPicker {
+  display: none;
+}
+
+.stepButton:hover {
+  border-color: #aabcc9;
+  background: #edf3f6;
+  color: #173b5b;
+}
+
+.stepButton:focus-visible {
+  outline: 3px solid #287090;
+  outline-offset: 2px;
+}
+
+.currentStep {
+  border-color: #173b5b;
+  background: #173b5b;
+  color: #fff;
+}
+
+.currentStep:hover {
+  border-color: #102c45;
+  background: #102c45;
+  color: #fff;
+}
+
+.completedStep {
+  border-color: #b8d1c1;
+  background: #edf5ef;
+  color: #285c41;
+}
+
+@media (max-width: 639px) {
+  .wizard {
+    margin-bottom: 1.125rem;
+  }
+
+  .panel {
+    padding: 1rem 0.875rem 0.875rem;
+    border-radius: 0.875rem;
+  }
+
+  .topline {
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .stepTitle {
+    font-size: 1.25rem;
+  }
+
+  .progressLabel {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.125rem;
+    font-size: 0.75rem;
+  }
+
+  .stepNav {
+    display: none;
+  }
+
+  .mobileStepPicker {
+    display: grid;
+    gap: 0.375rem;
+    margin-top: 0.875rem;
+    color: #354a5a;
+    font-size: 0.8125rem;
+    font-weight: 650;
+  }
+
+  .mobileStepPicker select {
+    width: 100%;
+    min-height: 2.875rem;
+    border: 1px solid #aebec9;
+    border-radius: 0.625rem;
+    background: #fff;
+    padding: 0.5rem 0.75rem;
+    color: #173b5b;
+    font-size: 1rem;
+  }
+
+  .mobileStepPicker select:focus-visible {
+    outline: 3px solid rgb(40 112 144 / 22%);
+    outline-offset: 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressFill,
+  .stepButton {
+    transition: none;
+  }
+}
